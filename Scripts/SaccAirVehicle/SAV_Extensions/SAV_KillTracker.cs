@@ -13,6 +13,10 @@ namespace SaccFlightAndVehicles
         private SaccEntity EntityControl;
         [Tooltip("Leave empty if you just want to use the SFEXT_O_GotKilled and SFEXT_O_GotAKill events for something else")]
         public SaccScoreboard_Kills KillsBoard;
+
+        [Tooltip("If it is greater than 0, the score is reduced when this aircraft is shot down. For example, it can protect civilian aircraft.")]
+        public ushort KillPenalty = 0;
+
         private bool InEditor;
         private VRCPlayerApi localPlayer;
         public void SFEXT_L_EntityStart()
@@ -31,7 +35,8 @@ namespace SaccFlightAndVehicles
                 if (EntityControl.LastAttacker != EntityControl)
                 {
                     EntityControl.SendEventToExtensions("SFEXT_O_GotKilled");
-                    EntityControl.LastAttacker.SendEventToExtensions("SFEXT_O_GotAKill");
+                    if (KillPenalty > 0) EntityControl.LastAttacker.SendEventToExtensions("SFEXT_O_GotAKillPenalty");
+                    else  EntityControl.LastAttacker.SendEventToExtensions("SFEXT_O_GotAKill");
                 }
             }
             if (localPlayer.IsOwner(KillsBoard.gameObject)) { KillsBoard.PlaneDied(); }
@@ -40,12 +45,13 @@ namespace SaccFlightAndVehicles
         {
             if (KillsBoard) { KillsBoard.MyKills = 0; }
         }
-        public void SFEXT_O_GotAKill()
+
+        private void AddKill(int value)
         {
-            //Debug.Log("SFEXT_O_GotAKill");
             if (KillsBoard && (bool)SAVControl.GetProgramVariable("Piloting"))
             {
-                KillsBoard.MyKills++;
+                KillsBoard.MyKills = (ushort)Mathf.Clamp(KillsBoard.MyKills + value, ushort.MinValue, ushort.MaxValue);
+
                 if (KillsBoard.MyKills > KillsBoard.MyBestKills)
                 {
                     KillsBoard.MyBestKills = KillsBoard.MyKills;
@@ -63,6 +69,17 @@ namespace SaccFlightAndVehicles
                     }
                 }
             }
+        }
+
+        public void SFEXT_O_GotAKill()
+        {
+            //Debug.Log("SFEXT_O_GotAKill");
+            AddKill(1);
+        }
+
+        public void SFEXT_O_GotAKillPenalty()
+        {
+            AddKill(-KillPenalty);
         }
     }
 }
