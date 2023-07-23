@@ -17,6 +17,8 @@ namespace SaccFlightAndVehicles
         public SaccVehicleSeat ThisSVSeat;
         [Tooltip("Require the user to hold down the button to take control?")]
         [SerializeField] private bool HoldToTake = false;
+        [Tooltip("Inverse the throttle and joystick controls when control is switched?")]
+        public bool SwitchHandsJoyThrottle = false;
         [Tooltip("These tramsforms will be moved to their corresponding _CoPosition when control is switched")]
         public Transform[] MoveTransforms;
         public Transform[] MoveTransforms_CoPosition;
@@ -35,6 +37,7 @@ namespace SaccFlightAndVehicles
         private SaccAirVehicle SAVControl;
         private Vector3[] MoveTransformsPos_Orig;
         private Quaternion[] MoveTransformsRot_Orig;
+        private bool OriginalSwitchHandsJoyThrottle;
         public void DFUNC_LeftDial() { UseLeftTrigger = true; }
         public void DFUNC_RightDial() { UseLeftTrigger = false; }
         public void SFEXTP_L_EntityStart()
@@ -81,6 +84,11 @@ namespace SaccFlightAndVehicles
                 SAVControl.EngineOnOnEnter = false;
                 SAVControl.EngineOffOnExit = false;
             }
+            if (SAVControl && SwitchHandsJoyThrottle)
+            {
+                OriginalSwitchHandsJoyThrottle = SAVControl.SwitchHandsJoyThrottle;
+                SAVControl.SwitchHandsJoyThrottle = !OriginalSwitchHandsJoyThrottle;
+            }
             SeatAPI = ThisSVSeat.SeatedPlayer;
             PilotSeatAPI = PilotSVSeat.SeatedPlayer;
             ThisSVSeat.Fake = true;
@@ -126,6 +134,10 @@ namespace SaccFlightAndVehicles
                 autoEngineExit = SAVControl.EngineOffOnExit;
                 SAVControl.EngineOnOnEnter = false;
                 SAVControl.EngineOffOnExit = false;
+            }
+            if (SAVControl && SwitchHandsJoyThrottle)
+            {
+                SAVControl.SwitchHandsJoyThrottle = OriginalSwitchHandsJoyThrottle;
             }
             SeatAPI = ThisSVSeat.SeatedPlayer;
             PilotSeatAPI = PilotSVSeat.SeatedPlayer;
